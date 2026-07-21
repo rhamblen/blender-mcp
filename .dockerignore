@@ -1,0 +1,24 @@
+# Build context is the repo root; the Dockerfile lives at docker/Dockerfile
+# and only COPYs pyproject.toml, README.md, LICENSE, main.py, and src/.
+# Everything else is excluded to keep the build context small.
+.git/
+.gitignore
+.gitattributes
+.env
+*.env.local
+**/.env
+addon.py
+assets/
+docs/
+docker/
+.github/
+test_set_texture_version_guard.py
+TERMS_AND_CONDITIONS.md
+CHANGELOG.md
+VERSION
+server.json
+.python-version
+uv.lock
+.DS_Store
+.vscode/
+.idea/

@@ -5,7 +5,24 @@
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/blender-mcp?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/blender-mcp)
 
 
+> **About this fork** — forked from [ahujasid/blender-mcp](https://github.com/ahujasid/blender-mcp) (all credit to the original author for the addon, tool design, and Blender integration). This fork adds a `streamable-http` transport with a `/health` endpoint and Docker packaging (`docker/` + GHCR publishing) so the MCP server can run as its own container, separate from Blender, on our infra — see [docs/Deployment.md](docs/Deployment.md). No changes to `addon.py` or tool behavior; local/stdio usage (Claude Desktop, Cursor, etc.) is unaffected.
+
 BlenderMCP connects Blender to Claude AI through the Model Context Protocol (MCP), allowing Claude to directly interact with and control Blender. This integration enables prompt assisted 3D modeling, scene creation, and manipulation.
+
+## Docker (this fork)
+
+Run the MCP server as its own container, independent from wherever Blender runs — see [docs/Deployment.md](docs/Deployment.md) for the full guide (including how this connects to the Blender addon's socket over the network). Quick start:
+
+```bash
+cd docker
+cp docker-compose.example.yml docker-compose.yml
+cp .env.example .env
+# Edit .env: set BLENDER_HOST/BLENDER_PORT to wherever the Blender addon's
+# socket is reachable.
+
+docker compose pull
+docker compose up -d
+```
 
 **[Official website](https://blendermcp.org/)**
 

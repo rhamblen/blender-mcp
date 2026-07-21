@@ -1,0 +1,53 @@
+# Example Docker Compose for blender-mcp
+#
+# This file lives in docker/. Copy it to docker-compose.yml and create a .env
+# from docker/.env.example.
+#
+# Networking: this container only needs an outbound connection to the
+# Blender addon's socket (BLENDER_HOST:BLENDER_PORT) on UR1 — it does not
+# need to share a network with Blender's container. Kept bridge-only here,
+# same posture as our other MCP deployments (e.g. pihole-mcp): published to
+# 127.0.0.1 on the host, not the LAN. Put a reverse proxy / Tailscale in
+# front if you need LAN/remote access, same as the other MCP containers.
+
+services:
+  blender-mcp:
+    image: ghcr.io/rhamblen/blender-mcp:latest
+    # To build locally instead of pulling the prebuilt image. The build
+    # context is the repo root (one level up), where pyproject.toml and
+    # src/ live; the Dockerfile stays under docker/:
+    # build:
+    #   context: ..
+    #   dockerfile: docker/Dockerfile
+    container_name: blender-mcp
+    environment:
+      MCP_TRANSPORT: streamable-http
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8000"
+      BLENDER_HOST: ${BLENDER_HOST}
+      BLENDER_PORT: ${BLENDER_PORT:-9876}
+      BLENDER_MCP_DISABLE_TELEMETRY: "true"
+      TZ: ${TZ:-UTC}
+    ports:
+      - "127.0.0.1:${MCP_PUBLISH_PORT:-8877}:8000"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid
+    mem_limit: 256m
+    cpus: 0.3
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

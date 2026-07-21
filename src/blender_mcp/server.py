@@ -206,10 +206,29 @@ async def server_lifespan(server: FastMCP) -> AsyncIterator[Dict[str, Any]]:
         logger.info("BlenderMCP server shut down")
 
 # Create the MCP server with lifespan support
+# host/port only matter for the streamable-http/sse transports (see main());
+# stdio ignores them entirely.
 mcp = FastMCP(
     "BlenderMCP",
-    lifespan=server_lifespan
+    lifespan=server_lifespan,
+    host=os.getenv("MCP_HOST", "127.0.0.1"),
+    port=int(os.getenv("MCP_PORT", "8000")),
 )
+
+
+@mcp.custom_route("/health", methods=["GET"])
+async def health(request):
+    """Liveness/readiness endpoint for container healthchecks (streamable-http transport only)."""
+    from starlette.responses import JSONResponse
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            server_version = version("blender-mcp")
+        except PackageNotFoundError:
+            server_version = "unknown"
+    except Exception:
+        server_version = "unknown"
+    return JSONResponse({"ok": True, "service": "blender-mcp", "version": server_version})
 
 # Resource endpoints
 
@@ -1247,7 +1266,12 @@ def main():
             "not a hang. Press Ctrl-C to exit. "
             "Setup guide: https://github.com/ahujasid/blender-mcp#installation"
         )
-    mcp.run()
+
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    if transport not in ("stdio", "sse", "streamable-http"):
+        logger.warning(f"Unknown MCP_TRANSPORT={transport!r}, falling back to stdio")
+        transport = "stdio"
+    mcp.run(transport=transport)
 
 if __name__ == "__main__":
     main()
